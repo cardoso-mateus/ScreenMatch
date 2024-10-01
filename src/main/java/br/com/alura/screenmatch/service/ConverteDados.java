@@ -1,7 +1,5 @@
 package br.com.alura.screenmatch.service;
 
-import br.com.alura.screenmatch.model.DadosSerie;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
