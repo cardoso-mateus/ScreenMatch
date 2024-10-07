@@ -1,5 +1,6 @@
 package br.com.alura.screenmatch.main;
 
+import br.com.alura.screenmatch.model.DadosEpisodio;
 import br.com.alura.screenmatch.model.DadosSerie;
 import br.com.alura.screenmatch.model.DadosTemporada;
 import br.com.alura.screenmatch.model.Episodios;
@@ -7,9 +8,7 @@ import br.com.alura.screenmatch.service.ConsumoAPI;
 import br.com.alura.screenmatch.service.ConverteDados;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Main {
@@ -28,50 +27,17 @@ public class Main {
         DadosSerie dadosSerie = converteDados.parseData(jsonRequest, DadosSerie.class);
         System.out.println("\n" + dadosSerie + "\n");
 
-        List<DadosTemporada> temporadas = new ArrayList<>();
+        List<DadosTemporada> temporadas = inicializaListaDadosTemporada(dadosSerie, nomeSerie);
+//        imprimeListaDadosTemporada(temporadas);
+//        imprimeListaGetTituloDadosEpisodio(dadosSerie, temporadas);
+        List<DadosEpisodio> dadosEpisodios = iniciazilaListaDadosEpisodio(temporadas);
+//        imprimeTop5EpisodiosPorAvaliacao(dadosEpisodios);
+        List<Episodios> episodios = inicializaListaEpisodios(temporadas);
+        buscaEpisodioPorTrechoDoTitulo(episodios);
+//        buscaEpisodiosDesdeDataDeBusca(episodios);
+    }
 
-        for (int i = 1; i <= dadosSerie.totalTemporadas(); i++) {
-            url = ENDERECO + nomeSerie.replace(" ", "+") + "&Season=" + i + API_KEY;
-            jsonRequest = consumoAPI.getRequestData(url);
-            DadosTemporada dadosTemporada = converteDados.parseData(jsonRequest, DadosTemporada.class);
-            temporadas.add(dadosTemporada);
-        }
-
-        temporadas.forEach(System.out::println);System.out.println();
-
-//        laço 'for' simples
-//        for (int i = 0; i < dadosSerie.totalTemporadas(); i++) {
-//            List<DadosEpisodio> list = temporadas.get(i).dadosEpisodios();
-//            for (int j = 0; j < list.size(); j++) {
-//                System.out.println(list.get(j).titulo());
-//            }
-//        }
-
-//        laço 'forEach'
-//        for (DadosTemporada t : temporadas) {
-//            List<DadosEpisodio> list = t.dadosEpisodios();
-//            for (DadosEpisodio e : list) {
-//                System.out.println(e.titulo());
-//            }
-//        }
-
-//        laço com o método 'forEach()'
-//        temporadas.forEach(t -> t.dadosEpisodios().forEach(e -> System.out.println(e.titulo())));
-
-//        List<DadosEpisodio> dadosEpisodios = temporadas.stream()
-//                .flatMap(t -> t.episodios().stream())
-//                .collect(Collectors.toList());
-
-//        dadosEpisodios.stream()
-//                .filter(e -> !e.avaliacao().equalsIgnoreCase("n/a"))
-//                .sorted(Comparator.comparing(DadosEpisodio::avaliacao).reversed())
-//                .limit(5)
-//                .forEach(System.out::println);
-
-        List<Episodios> episodios = temporadas.stream()
-                .flatMap(t -> t.episodios().stream().map(d -> new Episodios(t.numeroTemporada(), d)))
-                .collect(Collectors.toList());
-
+    private void buscaEpisodiosDesdeDataDeBusca(List<Episodios> episodios) {
         System.out.println("Buscar a partir de qual ano?");
         var anoBusca = input.nextInt();
         input.nextLine();
@@ -85,4 +51,86 @@ public class Main {
                                     + " Episódio: " + e.getNumeroEpisodio()
                                     + " Lançamento: " + e.getDataLancamento());});
     }
+
+    private void buscaEpisodioPorTrechoDoTitulo(List<Episodios> episodios) {
+        System.out.println("Digite um trecho do episódio que deseja buscar:");
+        var trechoBuscado = input.nextLine();
+
+        Optional<Episodios> episodioBuscado = episodios.stream()
+                .filter(e -> e.getTitulo().toLowerCase().contains(trechoBuscado.toLowerCase()))
+                .findFirst();
+
+        if (episodioBuscado.isPresent()) {
+            System.out.println("Primeiro resultado da busca:"
+                    + "\nEpisódio: " + episodioBuscado.get().getTitulo()
+                    + "\nTemporada: " + episodioBuscado.get().getTemporada());
+        } else {
+            System.out.println("Nenhum episódio encontrado nessa busca.");
+        }
+    }
+
+    private List<Episodios> inicializaListaEpisodios(List<DadosTemporada> temporadas) {
+        List<Episodios> episodios = temporadas.stream()
+                .flatMap(t -> t.episodios().stream().map(d -> new Episodios(t.numeroTemporada(), d)))
+                .collect(Collectors.toList());
+        return episodios;
+    }
+
+    private void imprimeTop5EpisodiosPorAvaliacao(List<DadosEpisodio> dadosEpisodios) {
+        dadosEpisodios.stream()
+                .filter(e -> !e.avaliacao().equalsIgnoreCase("n/a"))
+                /*.peek(e -> System.out.println("Filtro de avaliação \"N/A\" " + e))*/
+                .sorted(Comparator.comparing(DadosEpisodio::avaliacao).reversed())
+                /*.peek(e -> System.out.println("Ordenação em ordem lexicografica invertida " + e))*/
+                .limit(5)
+                /*.peek(e -> System.out.println("Limitando 5 itens " + e))*/
+                .forEach(System.out::println);
+    }
+
+    private List<DadosEpisodio> iniciazilaListaDadosEpisodio(List<DadosTemporada> temporadas) {
+        return temporadas.stream()
+                .flatMap(t -> t.episodios().stream())
+                .collect(Collectors.toList());
+    }
+
+    private void imprimeListaGetTituloDadosEpisodio(DadosSerie dadosSerie, List<DadosTemporada> temporadas) {
+/*
+//        laço 'for' simples
+        for (int i = 0; i < dadosSerie.totalTemporadas(); i++) {
+            List<DadosEpisodio> list = temporadas.get(i).episodios();
+            for (int j = 0; j < list.size(); j++) {
+                System.out.println(list.get(j).titulo());
+            }
+        }
+*/
+
+/*
+//        laço 'forEach'
+        for (DadosTemporada t : temporadas) {
+            List<DadosEpisodio> list = t.episodios();
+            for (DadosEpisodio e : list) {
+                System.out.println(e.titulo());
+            }
+        }
+*/
+
+//        laço com o método 'forEach()'
+        temporadas.forEach(t -> t.episodios().forEach(e -> System.out.println(e.titulo())));
+    }
+
+    private void imprimeListaDadosTemporada(List<DadosTemporada> temporadas) {
+        temporadas.forEach(System.out::println);
+    }
+
+    private List<DadosTemporada> inicializaListaDadosTemporada(DadosSerie dadosSerie, String nomeSerie) {
+        List<DadosTemporada> temporadas = new ArrayList<>();
+        for (int i = 1; i <= dadosSerie.totalTemporadas(); i++) {
+            String url = ENDERECO + nomeSerie.replace(" ", "+") + "&Season=" + i + API_KEY;
+            String jsonRequest = consumoAPI.getRequestData(url);
+            DadosTemporada dadosTemporada = converteDados.parseData(jsonRequest, DadosTemporada.class);
+            temporadas.add(dadosTemporada);
+        }
+        return temporadas;
+    }
+
 }
