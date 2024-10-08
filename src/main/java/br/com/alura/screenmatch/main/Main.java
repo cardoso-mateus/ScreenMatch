@@ -33,8 +33,27 @@ public class Main {
         List<DadosEpisodio> dadosEpisodios = iniciazilaListaDadosEpisodio(temporadas);
 //        imprimeTop5EpisodiosPorAvaliacao(dadosEpisodios);
         List<Episodios> episodios = inicializaListaEpisodios(temporadas);
-        buscaEpisodioPorTrechoDoTitulo(episodios);
+//        buscaEpisodioPorTrechoDoTitulo(episodios);
 //        buscaEpisodiosDesdeDataDeBusca(episodios);
+//        imprimeNotaMediaPorTemporada(episodios);
+//        imprimeEstatisticas(episodios);
+    }
+
+    private static void imprimeEstatisticas(List<Episodios> episodios) {
+        DoubleSummaryStatistics est = episodios.stream()
+                .filter(e -> e.getAvaliacao() > 0.0)
+                .collect(Collectors.summarizingDouble(Episodios::getAvaliacao));
+        System.out.println("Quatidade de episódios avaliados: " + est.getCount()
+                            + "\nMaior avaliação: " + est.getMax()
+                            + "\nMenor avaliação: " + est.getMin()
+                            + "\nMédia de todos os episódios: " + est.getAverage());
+    }
+
+    private static void imprimeNotaMediaPorTemporada(List<Episodios> episodios) {
+        Map<Integer, Double> mediaTemporada = episodios.stream()
+                .filter(e -> e.getAvaliacao() > 0.0)
+                .collect(Collectors.groupingBy(Episodios::getTemporada, Collectors.averagingDouble(Episodios::getAvaliacao)));
+        System.out.println(mediaTemporada);
     }
 
     private void buscaEpisodiosDesdeDataDeBusca(List<Episodios> episodios) {
@@ -70,10 +89,9 @@ public class Main {
     }
 
     private List<Episodios> inicializaListaEpisodios(List<DadosTemporada> temporadas) {
-        List<Episodios> episodios = temporadas.stream()
+        return temporadas.stream()
                 .flatMap(t -> t.episodios().stream().map(d -> new Episodios(t.numeroTemporada(), d)))
                 .collect(Collectors.toList());
-        return episodios;
     }
 
     private void imprimeTop5EpisodiosPorAvaliacao(List<DadosEpisodio> dadosEpisodios) {
